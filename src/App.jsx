@@ -347,6 +347,7 @@ const mapMeetingsCSV = (rows) => {
     const base = organizer || participants[0] || any;
     if (!base) return null;
     const joinField = (key) => participants.map(p => p[key] || '').filter(Boolean).join(', ');
+    const joinAll = (key) => participants.map(p => String(p[key] || '').trim()).join(', ');
     const start = base['Start time'] || '';
     const end = base['End time'] || '';
     const time = (start && end) ? `${start} — ${end}` : (start || end || null);
@@ -360,11 +361,15 @@ const mapMeetingsCSV = (rows) => {
       organizer_email: organizer?.['Attendee Email'] || null,
       organizer_company: organizer?.['Company Name'] || null,
       organizer_job_title: organizer?.['Attendee Job Title'] || null,
+      organizer_arrived: organizer?.['Attendee Arrived'] || null,
+      organizer_feedback: organizer?.['Attendee Feedback Given'] || null,
       recipient_names: joinField('Attendee Name') || null,
       recipient_emails: joinField('Attendee Email') || null,
       recipient_companies: joinField('Company Name') || null,
       recipient_job_titles: joinField('Attendee Job Title') || null,
-      personal_message: String(base['Meeting Personal Message'] || '').slice(0, 1000) || null,
+      recipient_arrived: joinAll('Attendee Arrived') || null,
+      recipient_feedback: joinAll('Attendee Feedback Given') || null,
+      personal_message: String(base['Meeting Personal Message'] || '') || null,
     };
   }).filter(Boolean);
 };
