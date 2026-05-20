@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { Upload, Download, Lock, Trash2, BarChart3, Users, CheckCircle2, AlertCircle, X, LogOut } from 'lucide-react';
-import { supabase } from './supabase.js';
+import { supabase, supabaseConfigured, supabaseConfig } from './supabase.js';
 import { SPONSORS, ALIASES } from './constants.js';
 import { normalise, cleanSessionName, fmtDateTime, getEnrichment, getSponsorData, pillTone } from './lib.js';
 import { exportSponsorPack } from './exportPack.js';
@@ -243,6 +243,28 @@ const parseCSV = (file) => new Promise((resolve, reject) => {
   Papa.parse(file, { header: true, skipEmptyLines: true, complete: (r) => resolve(r.data), error: reject });
 });
 
+// Grip's Meeting Analytics CSV export has a category header row on row 0
+// (Meeting Info / Meeting Times / Attendee Info / ...) and the real column
+// names on row 1. Skip the first row and use the second as the header.
+const parseCSVMeetings = (file) => new Promise((resolve, reject) => {
+  Papa.parse(file, {
+    header: false,
+    skipEmptyLines: true,
+    complete: (r) => {
+      const rows = r.data;
+      if (rows.length < 2) { resolve([]); return; }
+      const headers = rows[1];
+      const data = rows.slice(2).map(row => {
+        const o = {};
+        headers.forEach((h, i) => { o[h] = row[i] ?? ''; });
+        return o;
+      });
+      resolve(data);
+    },
+    error: reject,
+  });
+});
+
 const parseXLSX = async (file, headerRow = 0) => {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: 'array' });
@@ -308,9 +330,101 @@ const mapMeetings = (rows) => rows.filter(r => r['Meeting ID']).map(r => ({
   personal_message: r['Meeting Personal Message'] || null,
 }));
 
+// Grip's CSV meeting analytics export is one row per attendee. Group by
+// Meeting ID and pivot: one Organizer row + one or more Participant rows
+// becomes a single meeting row with comma-joined recipient fields.
+const mapMeetingsCSV = (rows) => {
+  const byMid = {};
+  for (const r of rows) {
+    const mid = String(r['Meeting ID'] || '').trim();
+    if (!mid) continue;
+    if (!byMid[mid]) byMid[mid] = { organizer: null, participants: [], any: r };
+    const role = String(r['Attendee Role'] || '').toLowerCase();
+    if (role === 'organizer') byMid[mid].organizer = r;
+    else byMid[mid].participants.push(r);
+  }
+  return Object.entries(byMid).map(([mid, { organizer, participants, any }]) => {
+    const base = organizer || participants[0] || any;
+    if (!base) return null;
+    const joinField = (key) => participants.map(p => p[key] || '').filter(Boolean).join(', ');
+    const start = base['Start time'] || '';
+    const end = base['End time'] || '';
+    const time = (start && end) ? `${start} — ${end}` : (start || end || null);
+    return {
+      meeting_id: mid,
+      status: base['Meeting Status'] || null,
+      meeting_date: base['Meeting Date'] || null,
+      meeting_time: time,
+      location: base['Meeting Location'] || null,
+      organizer_name: organizer?.['Attendee Name'] || null,
+      organizer_email: organizer?.['Attendee Email'] || null,
+      organizer_company: organizer?.['Company Name'] || null,
+      organizer_job_title: organizer?.['Attendee Job Title'] || null,
+      recipient_names: joinField('Attendee Name') || null,
+      recipient_emails: joinField('Attendee Email') || null,
+      recipient_companies: joinField('Company Name') || null,
+      recipient_job_titles: joinField('Attendee Job Title') || null,
+      personal_message: String(base['Meeting Personal Message'] || '').slice(0, 1000) || null,
+    };
+  }).filter(Boolean);
+};
+
+
+// =============== Setup / error fallbacks ===============
+
+function ConfigError() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+      <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl">
+        <div className="flex items-center gap-3 mb-4">
+          <AlertCircle className="w-6 h-6 text-red-600" />
+          <h1 className="text-xl font-semibold text-slate-900">Setup incomplete</h1>
+        </div>
+        <p className="text-sm text-slate-700 mb-3">
+          The Supabase environment variables are missing or invalid in this build. The app cannot connect to the database.
+        </p>
+        <ul className="text-sm text-slate-700 mb-4 list-disc pl-5 space-y-1">
+          <li>VITE_SUPABASE_URL: {supabaseConfig.url ? <code className="text-emerald-700">set ({supabaseConfig.url})</code> : <code className="text-red-700">MISSING</code>}</li>
+          <li>VITE_SUPABASE_PUBLISHABLE_KEY: {supabaseConfig.hasKey ? <code className="text-emerald-700">set</code> : <code className="text-red-700">MISSING</code>}</li>
+        </ul>
+        <p className="text-sm text-slate-600 mb-2"><strong>Fix:</strong></p>
+        <ol className="text-sm text-slate-600 list-decimal pl-5 space-y-1">
+          <li>In Netlify, go to Site configuration → Environment variables</li>
+          <li>Confirm both names exactly: <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY</code></li>
+          <li>Go to Deploys → Trigger deploy → Deploy site (env var changes don't apply to existing builds)</li>
+          <li>Wait for the new deploy to finish, then reload</li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidCatch(err, info) { console.error('App crashed:', err, info); }
+  render() {
+    if (this.state.err) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+              <h1 className="text-xl font-semibold text-slate-900">Something went wrong</h1>
+            </div>
+            <p className="text-sm text-slate-700 mb-3">The app hit a runtime error. Open the browser console (F12 → Console) to see the full stack trace.</p>
+            <pre className="text-xs bg-slate-100 p-3 rounded overflow-auto max-h-48">{String(this.state.err?.stack || this.state.err)}</pre>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // =============== Main App ===============
 
-export default function App() {
+function AppInner() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('upload');
@@ -364,7 +478,15 @@ export default function App() {
     try {
       const raw = await parser(file);
       const mapped = mapper(raw);
-      await upsertChunks(table, mapped, conflictKey);
+      // Dedupe within the batch by conflict key (last write wins) so Postgres
+      // doesn't choke on duplicate rows in a single upsert call.
+      const dedupedMap = {};
+      for (const r of mapped) {
+        const k = r[conflictKey];
+        if (k != null && k !== '') dedupedMap[k] = r;
+      }
+      const deduped = Object.values(dedupedMap);
+      await upsertChunks(table, deduped, conflictKey);
       await refreshAll();
       setStatuses(s => ({ ...s, [key]: { ...(s[key] || {}), uploading: false, lastUpload: new Date().toLocaleString('en-GB') } }));
     } catch (e) {
@@ -375,7 +497,35 @@ export default function App() {
 
   const handleScans = wrappedUpload('scans', mapScans, 'stand_scans', 'scan_id', parseCSV);
   const handleCheckins = wrappedUpload('checkins', mapCheckins, 'session_checkins', 'scan_id', parseCSV);
-  const handleMeetings = wrappedUpload('meetings', mapMeetings, 'meetings', 'meeting_id', (f) => parseXLSX(f, 1));
+
+  // Meetings handler — supports both the legacy xlsx export and the newer
+  // meeting analytics CSV export (different structures, different mappers).
+  const handleMeetings = async (file) => {
+    setStatuses(s => ({ ...s, meetings: { ...(s.meetings || {}), uploading: true, error: null } }));
+    try {
+      const isCSV = file.name.toLowerCase().endsWith('.csv');
+      let mapped;
+      if (isCSV) {
+        const raw = await parseCSVMeetings(file);
+        mapped = mapMeetingsCSV(raw);
+      } else {
+        const raw = await parseXLSX(file, 1);
+        mapped = mapMeetings(raw);
+      }
+      const dedupedMap = {};
+      for (const r of mapped) {
+        const k = r.meeting_id;
+        if (k != null && k !== '') dedupedMap[k] = r;
+      }
+      const deduped = Object.values(dedupedMap);
+      await upsertChunks('meetings', deduped, 'meeting_id');
+      await refreshAll();
+      setStatuses(s => ({ ...s, meetings: { ...(s.meetings || {}), uploading: false, lastUpload: new Date().toLocaleString('en-GB') } }));
+    } catch (e) {
+      console.error(e);
+      setStatuses(s => ({ ...s, meetings: { ...(s.meetings || {}), uploading: false, error: e.message } }));
+    }
+  };
 
   const clearTable = async (table, key) => {
     if (!confirm(`Clear all rows in ${table}? This deletes the data from Supabase. Cannot be undone.`)) return;
@@ -456,8 +606,8 @@ export default function App() {
               <UploadBox label="Session Check-Ins" hint="CSV from session scanner. Deduplicated on Scan ID."
                 accept=".csv" status={statuses.checkins} onFile={handleCheckins}
                 onClear={() => clearTable('session_checkins', 'checkins')} />
-              <UploadBox label="Meetings List" hint="Excel export from Grip. Deduplicated on Meeting ID."
-                accept=".xlsx,.xls" status={statuses.meetings} onFile={handleMeetings}
+              <UploadBox label="Meetings List" hint="CSV or Excel export from Grip. Deduplicated on Meeting ID."
+                accept=".csv,.xlsx,.xls" status={statuses.meetings} onFile={handleMeetings}
                 onClear={clearMeetings} />
               <div className="border border-dashed border-slate-300 rounded-lg p-5 bg-slate-50">
                 <h3 className="font-semibold text-slate-700">Attendee enrichment</h3>
@@ -555,4 +705,9 @@ export default function App() {
       </main>
     </div>
   );
+}
+
+export default function App() {
+  if (!supabaseConfigured) return <ConfigError />;
+  return <ErrorBoundary><AppInner /></ErrorBoundary>;
 }
