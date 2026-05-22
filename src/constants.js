@@ -33,7 +33,7 @@ export const ALIASES = {
   'Element': ['Element', 'TryElement'], 'Flowable': ['Flowable'],
   'Gradient Labs': ['Gradient Labs', 'Gradient-Labs'], 'Moneyhub': ['Moneyhub', 'MoneyHub'],
   'Worldline': ['Worldline'], 'Cogence AI': ['Cogence AI', 'Cogence.AI', 'Cogence'],
-  'Creatio': ['Creatio'], 'ERI': ['ERI'], 'Impetus': ['Impetus', 'Impetus Technologies'],
+  'Creatio': ['Creatio'], 'ERI': ['ERI'], 'Impetus': ['Impetus', 'Impetus Technologies', 'Impetus Technologies, Inc'],
   'NTT Data': ['NTT Data', 'NTT DATA'], 'Oxford Risk': ['Oxford Risk'],
   'Smart Communications': ['Smart Communications'],
   'tts digital adoption solutions': ['tts', 'TTS', 'tts digital adoption solutions'],
@@ -41,37 +41,50 @@ export const ALIASES = {
   'Started PR': ['Started PR'], 'Forest Bikes': ['Forest Bikes', 'HumanForest', 'Human Forest'],
 };
 
+// Session titles below are the exact strings used in Grip's session records,
+// as confirmed by the agenda export on 22 May 2026.
+// - The 8 Vision Stage sessions had zero check-ins recorded (scanner not operated).
+//   These are recovered via recovery.js by reattributing the temp scanner's
+//   misconfigured stand scans by timestamp.
+// - 5 additional sessions added after cross-checking the sponsor-level totals
+//   from Grip. Marked "added 22 May" below.
+// Total: 36 sponsor-session entries.
 export const SPONSOR_SESSIONS = [
-  { sponsor: 'ElevenLabs', session: "Where Are We Now? The Great Reinvention of Banking" },
-  { sponsor: 'Salesforce', session: "Beyond the Bot: Conquering Banking's Hardest Frontiers With Agentic AI" },
-  { sponsor: 'Pometry', session: "What Banks Can Learn About Transformation From the Defence & Intelligence Communities" },
-  { sponsor: 'Prosci', session: "Digital Investment Is Live. Why Isn't Adoption Keeping Up?" },
-  { sponsor: 'EXL', session: "Reimagining Banking Operations Using Data & AI: From Contact Centres to Experience Centres" },
+  { sponsor: 'ElevenLabs', session: "Where are We Now? The Great Reinvention of Banking" },
+  { sponsor: 'Salesforce', session: "Beyond the Bot: Conquering Banking's Hardest Frontiers with Agentic AI" },
+  { sponsor: 'Pometry', session: "What Banks Can Learn About Transformation from the Defence & Intelligence Communities" },
+  { sponsor: 'Prosci', session: "Digital Investment is Live. Why Isn't Adoption Keeping Up?" },
+  { sponsor: 'EXL', session: "Reimagining Banking Operations using Data & AI: From Contact Centers to Experience Centers" }, // Vision Stage — recovered
   { sponsor: 'Rackspace Technology', session: "Behind the Screens: How Banks Make Their Digital Backbone Tick" },
   { sponsor: 'Sage', session: "Embedded Finance & Invisible Services: Who Owns the Customer Now?" },
   { sponsor: 'Oxford Risk', session: "People, Purpose and Personalisation: The New CX in Banking" },
-  { sponsor: 'Flowable', session: "Real AI: Operational Use Cases Delivering Impact Today" },
-  { sponsor: 'Cognition AI (Organizations)', session: "Trust Is the Real Bottleneck: Implementing agentic workflows in Banking" },
-  { sponsor: 'ElevenLabs', session: "What 22 Million AI Banking Calls Taught Us About Trust" },
-  { sponsor: 'Gradient Labs', session: "The Future of Software Engineering" },
-  { sponsor: 'Adesso', session: "From Ambition to Architecture: What Vision Really Demands" },
+  { sponsor: 'Flowable', session: "Real AI: Operational Use Cases Delivering Impact Today" }, // Vision Stage — recovered
+  { sponsor: 'Cognition AI (Organizations)', session: "The Future of Software Engineering" },
+  { sponsor: 'Kyndryl', session: "Trust Is the Real Bottleneck: Implementing agentic workflows in Banking" },
+  { sponsor: 'ElevenLabs', session: "What 22 Million AI Banking Calls Taught us About Trust" }, // Vision Stage — no scans even from temp scanner
+  { sponsor: 'Gradient Labs', session: "Data You Can Defend: Building Decision-Grade Information" },
+  { sponsor: 'Adesso', session: "The AI Act Reality Check: From Principle to Practice" }, // Vision Stage — recovered
   { sponsor: 'Atombit', session: "Next-Gen CX Automation: Personalisation in Real Time" },
-  { sponsor: 'Alinia', session: "The AI Act Reality Check: From Principle to Practice" },
-  { sponsor: 'Temenos', session: "Tokenisation and the Reinvention of Value" },
+  { sponsor: 'Alinia', session: "Responsible AI at Scale: From Pilots to Bank-Wide Execution" }, // Vision Stage — recovered
+  { sponsor: 'Temenos', session: "The Value Road Map to Become an AI-ready Bank" },
   { sponsor: 'Amdocs', session: "From Automation to Autonomy: Transforming Banking Operations with Agentic GenAI" },
-  { sponsor: 'Broadridge', session: "The Value Road Map to Become an AI-ready Bank" },
-  { sponsor: 'Airia', session: "Out of the Shadows: A Strategic Framework for AI Governance in Financial Services" },
+  { sponsor: 'Broadridge', session: "From Output to Outcome: The Race to Reinvent Customer Communications" },
+  { sponsor: 'Airia', session: "Out of the Shadows: A Strategic Framework for AI Governance in Financial Services" }, // Vision Stage — recovered
   { sponsor: 'Worldline', session: "The Moving Pound: Reinventing Payments and the Architecture of Value" },
-  { sponsor: 'Moneyhub', session: "Banking the Next Transformation" },
-  { sponsor: 'Hewlett Packard Enterprise', session: "Smart Models, Strict Rules: Navigating Risk in the Age of Generative AI" },
-  { sponsor: 'Skan AI', session: "People Deposit Trust, Not Just Money" },
-  { sponsor: 'Tieto', session: "Multi-Rail Banking at Scale: Beating Margin Through Volume" },
-  { sponsor: 'Salesforce', session: "Building Trust-Ready Infrastructure: Powering Secure, Real-Time Banking with AI" },
-  { sponsor: 'Sage', session: "Built to Last: Designing Bank Infrastructure That Earns Trust" },
-  { sponsor: 'Kyndryl', session: "Permission to F**k up" },
-  { sponsor: 'Kyndryl', session: "Cloud or Bust - Balancing Efficiency and Agility in Banking Technology" },
-  { sponsor: 'Started PR', session: "Podcast Panel: The Agentic Bank: What's Really Working" },
-  { sponsor: 'Credera', session: "From Output to Outcome: The Race to Reinvent Customer Communications" },
-  { sponsor: 'Element', session: "Building Banks That Bend: AI, Infrastructure and the Adaptive Edge" },
-  { sponsor: 'NextWave Consulting', session: "After Hours Live Lounge + Networking Drinks" },
+  { sponsor: 'Kyndryl', session: "Building Banks That Bend: AI, Infrastructure and the Adaptive Edge" },
+  { sponsor: 'Moneyhub', session: "People Deposit Trust, Not Just Money" },
+  { sponsor: 'Hewlett Packard Enterprise', session: "Building Trust-Ready Infrastructure: Powering Secure, Real-Time Banking with AI" },
+  { sponsor: 'Skan AI', session: "Why AI Pilots Stall in Banking: Bridging Probabilistic AI and Deterministic Execution with the Context Graph" },
+  { sponsor: 'Tieto', session: "Multi-Rail Banking at Scale: Beating Margin through Volume" },
+  { sponsor: 'Started PR', session: "After Hours Live Lounge: Banking Unfiltered" }, // Vision Stage — no scans even from temp scanner
+  { sponsor: 'Credera', session: "Breakfast Boardroom: Building Trustworthy AI for Banking" },
+  { sponsor: 'Element', session: "Promises vs Platforms: Can Modernisation Actually Deliver Momentum?" }, // Vision Stage — recovered
+  { sponsor: 'Sage', session: "From ESG Promises to Real Change: Can Banking Deliver?" },
+  { sponsor: 'NextWave Consulting', session: "The Agentic Bank: What's really working" },
+  // Added 22 May after cross-check with sponsor-level totals from Grip
+  { sponsor: 'OutSystems', session: "From Concept to Production: Reimagining Wealth Management with AI" }, // added 22 May
+  { sponsor: 'Pometry', session: "Pometry is the context layer for enterprise." }, // added 22 May
+  { sponsor: 'Impetus', session: "Modernise siloed data assets into trusted, AI-accessible knowledge with Impetus LeapLogic™ Suite" }, // added 22 May
+  { sponsor: 'Rackspace Technology', session: "AI in Production: Control, Infrastructure and the Reality of Scaling" }, // added 22 May
+  { sponsor: 'Temenos', session: "The Go-Live Imperative: De-Risking Transformation Whilst Accelerating Value" }, // added 22 May
 ];
